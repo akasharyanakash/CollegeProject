@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My College Inquiry Bot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="main-header">
+    <div class="logo-box">
+      <div class="logo-icon">MC</div>
+      <div class="logo-text">
+        <h1>My College</h1>
+        <p>Inquiry Bot System</p>
+      </div>
+    </div>
+
+    <nav class="main-nav">
+      <a href="#hero">Home</a>
+      <a href="#features">Features</a>
+      <a href="#chatSection">Chat</a>
+      <a href="#inquirySection">Inquiry</a>
+      <a href="admin.html" target="_blank" class="nav-button">Admin</a>
+    </nav>
+  </header>
+
+  <section class="hero-section" id="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-left">
+        <span class="hero-badge">Online Education Support</span>
+        <h2>Smart College Inquiry Bot For Students</h2>
+        <p>
+          Get quick information about courses, admission, fees, library timings,
+          contact details, and more through a modern digital Inquiry system.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#chatSection" class="btn-primary">Start Chat</a>
+          <a href="#inquirySection" class="btn-secondary">Submit Inquiry</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section" id="features">
+    <div class="section-title">
+      <h2>What We Offer For Growth Your Study</h2>
+      <p>
+        Our Inquiry bot helps students with quick communication, instant guidance,
+        inquiry collection, and course support in a modern digital environment.
+      </p>
+    </div>
+
+    <div class="feature-cards">
+      <div class="feature-card purple">
+        <div class="feature-icon">👥</div>
+        <h3>Student Guidance</h3>
+        <p>Get quick help about BCA, BBA, admission process, documents, and fee details.</p>
+      </div>
+
+      <div class="feature-card blue">
+        <div class="feature-icon">💻</div>
+        <h3>Digital Reception</h3>
+        <p>A smart reception system that works anytime and stores inquiry data properly.</p>
+      </div>
+
+      <div class="feature-card pink">
+        <div class="feature-icon">🏆</div>
+        <h3>Better Management</h3>
+        <p>Manage leads, inquiries, chat history, and dashboard analytics from one place.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bot-layout-section">
+    <div class="bot-layout-grid">
+      <section id="chatSection" class="glass-panel">
+        <div class="panel-head">
+          <div>
+            <h3>Inquiry Bot Chat</h3>
+            <p>Talk to the bot and get help instantly.</p>
+          </div>
+          <span class="live-badge">Online</span>
+        </div>
+
+        <div id="chatMessages" class="chat-messages"></div>
+        <div id="quickOptions" class="quick-options"></div>
+
+        <div class="chat-input-row">
+          <input id="userInput" type="text" placeholder="Type your message here..." />
+          <button type="button" onclick="sendMessage()">Send</button>
+          <button type="button" class="mic-btn" onclick="startVoice()">🎤</button>
+        </div>
+      </section>
+
+      <section id="inquirySection" class="glass-panel">
+        <div class="panel-head">
+          <div>
+            <h3>Student Inquiry Form</h3>
+            <p>Submit your details for admission support and follow-up.</p>
+          </div>
+        </div>
+
+        <form id="inquiryForm" class="inquiry-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">Full Name</label>
+              <input id="name" type="text" placeholder="Enter full name" required />
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input id="email" type="email" placeholder="Enter email address" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="phone">Phone Number</label>
+              <input id="phone" type="text" placeholder="Enter phone number" />
+            </div>
+
+            <div class="form-group">
+              <label for="course">Interested Course</label>
+              <select id="course" required>
+                <option value="">-- Select Course --</option>
+                <option value="BCA">BCA</option>
+                <option value="BBA">BBA</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="message">Inquiry Message</label>
+            <textarea id="message" rows="5" placeholder="Write your inquiry..." required></textarea>
+          </div>
+
+          <button type="submit" class="full-submit-btn">Submit Inquiry</button>
+        </form>
+
+        <p id="formStatus" class="form-status"></p>
+      </section>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-grid">
+        <div class="footer-box">
+          <h3>My College</h3>
+          <p>
+            My College Inquiry Bot ek smart student support system hai
+            jo courses, admission, fees, inquiry aur contact details me help karta hai.
+          </p>
+        </div>
+
+        <div class="footer-box">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#hero">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#chatSection">Chat</a></li>
+            <li><a href="#inquirySection">Inquiry</a></li>
+            <li><a href="admin.html">Admin</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-box">
+          <h4>Contact Info</h4>
+          <p>Phone: +91 98765 43210</p>
+          <p>Email: info@mycollege.com</p>
+          <p>Address: Main Market, City Center</p>
+        </div>
+
+        <div class="footer-box">
+          <h4>Courses</h4>
+          <p>BCA</p>
+          <p>BBA</p>
+          <p>Admission Support</p>
+          <p>Student Guidance</p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>© 2026 My College Inquiry Bot Project. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

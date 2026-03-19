@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - My College</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="dashboard-body">
+
+  <header class="dashboard-header">
+    <div class="dashboard-brand">
+      <div class="dashboard-logo">MC</div>
+      <div>
+        <h1>My College</h1>
+        <p>InquiryBot Admin System</p>
+      </div>
+    </div>
+
+    <div class="dashboard-header-right">
+      <div class="dashboard-welcome">Welcome, Admin!</div>
+      <button class="dashboard-secondary-btn" onclick="changePassword()">Change Password</button>
+      <button class="dashboard-logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <h2 class="dashboard-title">Admin Dashboard</h2>
+
+    <section class="dashboard-summary-grid">
+      <div class="summary-card purple-card">
+        <div class="summary-icon">💬</div>
+        <div>
+          <h3>Total Chats</h3>
+          <p id="chatCount">0</p>
+        </div>
+      </div>
+
+      <div class="summary-card cyan-card">
+        <div class="summary-icon">📋</div>
+        <div>
+          <h3>Total Leads</h3>
+          <p id="leadsCount">0</p>
+        </div>
+      </div>
+
+      <div class="summary-card blue-card">
+        <div class="summary-icon">📝</div>
+        <div>
+          <h3>Total Inquiries</h3>
+          <p id="inquiryCount">0</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboard-chart-grid">
+      <div class="dashboard-panel">
+        <div class="panel-top">
+          <h3>Leads vs Inquiries</h3>
+        </div>
+        <div class="chart-box">
+          <canvas id="mainChart"></canvas>
+        </div>
+      </div>
+
+      <div class="dashboard-panel">
+        <div class="panel-top">
+          <h3>Course-wise Distribution</h3>
+        </div>
+        <div class="chart-box">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboard-toolbar">
+      <button onclick="loadAll()">Refresh Data</button>
+      <button onclick="downloadLeadPDF()">Download Leads PDF</button>
+      <button onclick="downloadInquiryPDF()">Download Inquiries PDF</button>
+    </section>
+
+    <section class="dashboard-table-grid">
+      <div class="dashboard-panel">
+        <div class="panel-top">
+          <h3>Lead Records</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="leadTable">
+            <thead>
+              <tr>
+                <th>DateTime</th>
+                <th>Name</th>
+                <th>Course</th>
+                <th>Contact</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="dashboard-panel">
+        <div class="panel-top">
+          <h3>Inquiry Records</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="inquiryTable">
+            <thead>
+              <tr>
+                <th>DateTime</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Course</th>
+                <th>Message</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboard-table-grid recycle-grid">
+      <div class="dashboard-panel recycle-panel">
+        <div class="panel-top deleted-top">
+          <h3>Recently Deleted</h3>
+          <button class="dashboard-secondary-btn" onclick="toggleDeletedPanel()">View Deleted Records</button>
+        </div>
+
+        <div id="deletedPanel" style="display:none;">
+          <div class="dashboard-toolbar">
+            <button onclick="restoreSelectedDeleted()">Restore Selected</button>
+            <button onclick="deleteSelectedPermanently()">Delete Selected Permanently</button>
+            <button onclick="restoreAllDeleted()">Restore All</button>
+            <button onclick="deleteAllDeleted()">Delete All Permanently</button>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="data-table" id="deletedTable">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAllDeleted" onchange="toggleAllDeleted(this)" /></th>
+                  <th>Type</th>
+                  <th>Deleted At</th>
+                  <th>Original Row</th>
+                  <th>Data</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="messageModal" class="custom-modal">
+    <div class="custom-modal-content">
+      <div class="modal-top">
+        <h3>Message Details</h3>
+        <button class="modal-close-btn" onclick="closeMessageModal()">×</button>
+      </div>
+      <div id="modalMessageText" class="modal-message-box"></div>
+    </div>
+  </div>
+
+  <script>
+    if (localStorage.getItem("adminAuth") !== "true") {
+      window.location.href = "admin.html";
+    }
+
+    let mainChart;
+    let pieChart;
+    let leadRowsCache = [];
+    let inquiryRowsCache = [];
+    let deletedRowsCache = [];
+
+    function logout() {
+      localStorage.removeItem("adminAuth");
+      window.location.href = "admin.html";
+    }
+
+    function closeMessageModal() {
+      document.getElementById("messageModal").style.display = "none";
+    }
+
+    function viewMessage(message) {
+      document.getElementById("modalMessageText").textContent = message || "No message available.";
+      document.getElementById("messageModal").style.display = "flex";
+    }
+
+    async function changePassword() {
+      const oldPassword = prompt("Enter old password:");
+      if (!oldPassword) return;
+
+      const newPassword = prompt("Enter new password:");
+      if (!newPassword) return;
+
+      const res = await fetch("http://127.0.0.1:8080/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "admin",
+          oldPassword,
+          newPassword
+        })
+      });
+
+      alert(await res.text());
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length <= 1) return [];
+
+      return lines.slice(1).map((line, index) => {
+        const values = [];
+        let current = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+
+          if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              current += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            values.push(current);
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+
+        values.push(current);
+        return { rowIndex: index + 1, values };
+      });
+    }
+
+    function formatDateTime(dateTimeString) {
+      if (!dateTimeString) return "";
+      const date = new Date(dateTimeString);
+      if (isNaN(date.getTime())) return dateTimeString;
+
+      return date.toLocaleString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      });
+    }
+
+    function fillLeadTable(rows) {
+      const tbody = document.querySelector("#leadTable tbody");
+      tbody.innerHTML = "";
+
+      rows.forEach(item => {
+        const row = item.values;
+        const tr = document.createElement("tr");
+
+        [
+          formatDateTime(row[0] || ""),
+          row[1] || "",
+          row[2] || "",
+          row[3] || ""
+        ].forEach(value => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+
+        const actionTd = document.createElement("td");
+        actionTd.innerHTML = `
+          <button class="table-action-btn edit-btn" onclick="editLead(${item.rowIndex}, '${escapeForJs(row[1] || "")}', '${escapeForJs(row[2] || "")}', '${escapeForJs(row[3] || "")}')">Edit</button>
+          <button class="table-action-btn delete-btn" onclick="deleteLead(${item.rowIndex})">Delete</button>
+        `;
+        tr.appendChild(actionTd);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function fillInquiryTable(rows) {
+      const tbody = document.querySelector("#inquiryTable tbody");
+      tbody.innerHTML = "";
+
+      rows.forEach(item => {
+        const row = item.values;
+        const tr = document.createElement("tr");
+
+        [
+          formatDateTime(row[0] || ""),
+          row[1] || "",
+          row[2] || "",
+          row[3] || "",
+          row[4] || ""
+        ].forEach(value => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+
+        const msgTd = document.createElement("td");
+        msgTd.innerHTML = `<button class="table-action-btn view-btn" onclick="viewMessage('${escapeForJs(row[5] || "")}')">View</button>`;
+        tr.appendChild(msgTd);
+
+        const actionTd = document.createElement("td");
+        actionTd.innerHTML = `
+          <button class="table-action-btn edit-btn" onclick="editInquiry(${item.rowIndex}, '${escapeForJs(row[1] || "")}', '${escapeForJs(row[2] || "")}', '${escapeForJs(row[3] || "")}', '${escapeForJs(row[4] || "")}', '${escapeForJs(row[5] || "")}')">Edit</button>
+          <button class="table-action-btn delete-btn" onclick="deleteInquiry(${item.rowIndex})">Delete</button>
+        `;
+        tr.appendChild(actionTd);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function fillDeletedTable(rows) {
+      const tbody = document.querySelector("#deletedTable tbody");
+      tbody.innerHTML = "";
+
+      rows.forEach(item => {
+        const row = item.values;
+        const tr = document.createElement("tr");
+
+        const checkboxTd = document.createElement("td");
+        checkboxTd.innerHTML = `<input type="checkbox" class="deleted-check" value="${item.rowIndex}" />`;
+        tr.appendChild(checkboxTd);
+
+        [
+          row[0] || "",
+          formatDateTime(row[1] || ""),
+          row[2] || "",
+          row[3] || ""
+        ].forEach(value => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+
+        const actionTd = document.createElement("td");
+        actionTd.innerHTML = `
+          <button class="table-action-btn edit-btn" onclick="restoreSingleDeleted(${item.rowIndex})">Restore</button>
+          <button class="table-action-btn delete-btn" onclick="deleteSingleDeleted(${item.rowIndex})">Delete Permanently</button>
+        `;
+        tr.appendChild(actionTd);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeForJs(value) {
+      return String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "");
+    }
+
+    function countChatEntries(chatText) {
+      if (!chatText.trim()) return 0;
+      return (chatText.match(/DateTime:/g) || []).length;
+    }
+
+    function toggleDeletedPanel() {
+      const panel = document.getElementById("deletedPanel");
+      panel.style.display = panel.style.display === "none" ? "block" : "none";
+    }
+
+    function toggleAllDeleted(master) {
+      document.querySelectorAll(".deleted-check").forEach(cb => {
+        cb.checked = master.checked;
+      });
+    }
+
+    function getSelectedDeletedRows() {
+      return Array.from(document.querySelectorAll(".deleted-check:checked"))
+        .map(cb => cb.value)
+        .join(",");
+    }
+
+    async function deleteLead(rowIndex) {
+      if (!confirm("Delete this lead?")) return;
+
+      const res = await fetch("http://127.0.0.1:8080/delete-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndex })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function deleteInquiry(rowIndex) {
+      if (!confirm("Delete this inquiry?")) return;
+
+      const res = await fetch("http://127.0.0.1:8080/delete-inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndex })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function restoreSingleDeleted(rowIndex) {
+      const res = await fetch("http://127.0.0.1:8080/restore-deleted", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndexes: String(rowIndex) })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function deleteSingleDeleted(rowIndex) {
+      if (!confirm("Permanently delete this record?")) return;
+
+      const res = await fetch("http://127.0.0.1:8080/delete-deleted-permanent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndexes: String(rowIndex) })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function restoreSelectedDeleted() {
+      const rowIndexes = getSelectedDeletedRows();
+      if (!rowIndexes) {
+        alert("Please select deleted records first.");
+        return;
+      }
+
+      const res = await fetch("http://127.0.0.1:8080/restore-deleted", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndexes })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function deleteSelectedPermanently() {
+      const rowIndexes = getSelectedDeletedRows();
+      if (!rowIndexes) {
+        alert("Please select deleted records first.");
+        return;
+      }
+
+      if (!confirm("Selected deleted records permanently remove karne hain?")) return;
+
+      const res = await fetch("http://127.0.0.1:8080/delete-deleted-permanent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndexes })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function restoreAllDeleted() {
+      if (!confirm("Sab deleted records restore karne hain?")) return;
+
+      const all = deletedRowsCache.map(item => item.rowIndex).join(",");
+      if (!all) {
+        alert("No deleted records found.");
+        return;
+      }
+
+      const res = await fetch("http://127.0.0.1:8080/restore-deleted", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndexes: all })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function deleteAllDeleted() {
+      if (!confirm("Sab deleted records permanently delete karne hain?")) return;
+
+      const all = deletedRowsCache.map(item => item.rowIndex).join(",");
+      if (!all) {
+        alert("No deleted records found.");
+        return;
+      }
+
+      const res = await fetch("http://127.0.0.1:8080/delete-deleted-permanent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndexes: all })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function editLead(rowIndex, name, course, contact) {
+      const newName = prompt("Edit Name:", name);
+      if (newName === null) return;
+
+      const newCourse = prompt("Edit Course:", course);
+      if (newCourse === null) return;
+
+      const newContact = prompt("Edit Contact:", contact);
+      if (newContact === null) return;
+
+      const res = await fetch("http://127.0.0.1:8080/update-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndex, name: newName, course: newCourse, contact: newContact })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    async function editInquiry(rowIndex, name, email, phone, course, message) {
+      const newName = prompt("Edit Name:", name);
+      if (newName === null) return;
+
+      const newEmail = prompt("Edit Email:", email);
+      if (newEmail === null) return;
+
+      const newPhone = prompt("Edit Phone:", phone);
+      if (newPhone === null) return;
+
+      const newCourse = prompt("Edit Course:", course);
+      if (newCourse === null) return;
+
+      const newMessage = prompt("Edit Message:", message);
+      if (newMessage === null) return;
+
+      const res = await fetch("http://127.0.0.1:8080/update-inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rowIndex,
+          name: newName,
+          email: newEmail,
+          phone: newPhone,
+          course: newCourse,
+          message: newMessage
+        })
+      });
+
+      alert(await res.text());
+      loadAll();
+    }
+
+    function downloadLeadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.text("Lead Records Report", 14, 15);
+
+      const body = leadRowsCache.map(item => [
+        formatDateTime(item.values[0] || ""),
+        item.values[1] || "",
+        item.values[2] || "",
+        item.values[3] || ""
+      ]);
+
+      doc.autoTable({
+        head: [["DateTime", "Name", "Course", "Contact"]],
+        body
+      });
+
+      doc.save("lead-records.pdf");
+    }
+
+    function downloadInquiryPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("landscape");
+
+      doc.setFontSize(18);
+      doc.text("Inquiry Records Report", 14, 15);
+
+      const body = inquiryRowsCache.map(item => [
+        formatDateTime(item.values[0] || ""),
+        item.values[1] || "",
+        item.values[2] || "",
+        item.values[3] || "",
+        item.values[4] || "",
+        item.values[5] || ""
+      ]);
+
+      doc.autoTable({
+        head: [["DateTime", "Name", "Email", "Phone", "Course", "Message"]],
+        body,
+        styles: { fontSize: 8 }
+      });
+
+      doc.save("inquiry-records.pdf");
+    }
+
+    async function loadAll() {
+      const [leadsText, inquiriesText, chatText, courseStats, deletedText] = await Promise.all([
+        fetch("http://127.0.0.1:8080/leads").then(r => r.text()),
+        fetch("http://127.0.0.1:8080/inquiries").then(r => r.text()),
+        fetch("http://127.0.0.1:8080/chatlog").then(r => r.text()),
+        fetch("http://127.0.0.1:8080/course-stats").then(r => r.json()),
+        fetch("http://127.0.0.1:8080/deleted").then(r => r.text())
+      ]);
+
+      leadRowsCache = parseCSV(leadsText);
+      inquiryRowsCache = parseCSV(inquiriesText);
+      deletedRowsCache = parseCSV(deletedText);
+      const chatCount = countChatEntries(chatText);
+
+      document.getElementById("chatCount").textContent = chatCount;
+      document.getElementById("leadsCount").textContent = leadRowsCache.length;
+      document.getElementById("inquiryCount").textContent = inquiryRowsCache.length;
+
+      fillLeadTable(leadRowsCache);
+      fillInquiryTable(inquiryRowsCache);
+      fillDeletedTable(deletedRowsCache);
+
+      if (mainChart) mainChart.destroy();
+      if (pieChart) pieChart.destroy();
+
+      mainChart = new Chart(document.getElementById("mainChart"), {
+        type: "bar",
+        data: {
+          labels: ["Leads", "Inquiries", "Chats"],
+          datasets: [{
+            label: "Records",
+            data: [leadRowsCache.length, inquiryRowsCache.length, chatCount],
+            backgroundColor: ["#8b5cf6", "#60a5fa", "#34d399"],
+            borderRadius: 10
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      pieChart = new Chart(document.getElementById("pieChart"), {
+        type: "pie",
+        data: {
+          labels: courseStats.map(item => item.course),
+          datasets: [{
+            data: courseStats.map(item => item.count),
+            backgroundColor: ["#6d8df7", "#8ec5ff"]
+          }]
+        },
+        options: { responsive: true }
+      });
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById("messageModal");
+      if (event.target === modal) closeMessageModal();
+    };
+
+    loadAll();
+  </script>
+</body>
+</html>

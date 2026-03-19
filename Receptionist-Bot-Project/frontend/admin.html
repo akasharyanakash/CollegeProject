@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login - My College</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="admin-login-body">
+
+  <div class="admin-login-wrapper">
+    <div class="admin-login-card">
+      <div class="admin-login-left">
+        <div class="admin-illustration">
+          <div class="admin-blob admin-blob-1"></div>
+          <div class="admin-blob admin-blob-2"></div>
+          <div class="admin-blob admin-blob-3"></div>
+
+          <div class="admin-monitor">
+            <div class="admin-monitor-screen">
+              <div class="admin-user-icon"></div>
+              <div class="admin-lock-badge">🔒</div>
+            </div>
+            <div class="admin-monitor-bottom"></div>
+            <div class="admin-monitor-stand"></div>
+          </div>
+
+          <div class="admin-shield">✓</div>
+          <div class="admin-dot dot-1"></div>
+          <div class="admin-dot dot-2"></div>
+          <div class="admin-dot dot-3"></div>
+          <div class="admin-dot dot-4"></div>
+        </div>
+      </div>
+
+      <div class="admin-login-divider"></div>
+
+      <div class="admin-login-right">
+        <div class="admin-login-heading-line"></div>
+        <h2>Login as Admin</h2>
+        <p>Sign in to access the dashboard and manage the system.</p>
+
+        <div class="admin-input-group">
+          <span class="admin-input-icon">👤</span>
+          <input type="text" id="username" placeholder="Enter your username" />
+        </div>
+
+        <div class="admin-input-group">
+          <span class="admin-input-icon">🔒</span>
+          <input type="password" id="password" placeholder="Enter your password" />
+        </div>
+
+        <button class="admin-login-btn" onclick="login()">LOGIN</button>
+        <p id="error" class="admin-error-text"></p>
+
+        <div class="admin-login-links">
+          <span>Forget your password?</span>
+          <a href="#" onclick="showForgotMessage(event)">Contact admin support</a>
+        </div>
+
+        <div class="admin-login-footer">
+          Terms of use · Privacy policy
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function login() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const error = document.getElementById("error");
+      error.textContent = "";
+
+      if (!username || !password) {
+        error.textContent = "Please enter username and password.";
+        return;
+      }
+
+      try {
+        const res = await fetch("http://127.0.0.1:8080/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        const text = await res.text();
+
+        if (res.status === 200 && text.includes("success")) {
+          localStorage.setItem("adminAuth", "true");
+          window.location.href = "dashboard.html";
+        } else {
+          error.textContent = "Invalid username or password.";
+        }
+      } catch (e) {
+        error.textContent = "Server not responding.";
+      }
+    }
+
+    function showForgotMessage(event) {
+      event.preventDefault();
+      alert("Forgot password mail feature is not enabled in this lightweight version. Please contact system administrator.");
+    }
+
+    document.addEventListener("keypress", function (event) {
+      if (event.key === "Enter") login();
+    });
+  </script>
+</body>
+</html>
